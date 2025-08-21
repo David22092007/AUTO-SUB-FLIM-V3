@@ -632,11 +632,12 @@ def dub_movie(input_video_path, output_dir, api_keys, source_language, target_la
     if full_option:
         print("Step 3: Generating TTS files for segments...")
         checkpoint = load_checkpoint(translated_json_path)
+        checkpoint_dub=load_checkpoint(checkpoint_dub_file)['segments']
         metadata_list = checkpoint["segments"]
         list_start_time_complete = []
         
         if os.path.exists(checkpoint_dub_file):
-            list_start_time_complete = [i['start_time'] for i in load_checkpoint(checkpoint_dub_file)['segments'] if i['status'] == 'completed']        
+            list_start_time_complete = [i['start_time'] for i in checkpoint_dub if i['status'] == 'completed']        
         metadata_list = [i for i in metadata_list if i['start_time'] not in list_start_time_complete]
         max_workers = min(os.cpu_count() or 2, 2)
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -653,19 +654,32 @@ def dub_movie(input_video_path, output_dir, api_keys, source_language, target_la
                 ): segment
                 for segment in metadata_list
             }
+
+        # Đọc danh sách URL nếu sử dụng type_tts là 'fpt'
         if type_tts == 'fpt':
-            with open ('url_fpt_out_put_backurl.txt','r') as f:
-                list_url_fpt=f.readlines();f.close()
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            executor.map(thread_saving_video_fpt, list_url_fpt)
-        metadata_list = []
+            with open('url_fpt_out_put_backurl.txt', 'r') as f:
+                list_url_fpt = f.readlines()
+
+            # Xử lý các video FPT song song
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                executor.map(thread_saving_video_fpt, list_url_fpt)
+
+        # Kết hợp metadata từ các kết quả
+        new_metadata = []
         for future in as_completed(future_to_segment):
             segment = future_to_segment[future]
             try:
                 metadata = future.result()
                 if metadata:
-                    metadata_list.append(metadata)
-                    save_checkpoint(checkpoint_dub_file, {"segments": metadata_list})
+                    new_metadata.append(metadata)
+            except Exception as e:
+                print(f"Error processing segment: {e}")
+        
+        # Kết hợp metadata mới với dữ liệu cũ
+        new_metadata.extend(checkpoint_dub)
+
+        # Lưu lại kết quả vào file checkpoint
+        save_checkpoint(checkpoint_dub_file, {"segments": new_metadata})
             except Exception as e:
                 logging.error(f"TTS generation error: {e}")
                 print(f"TTS generation error: {e}")
@@ -1059,12 +1073,3 @@ if __name__ == "__main__":
         with open(complete_json_path, 'a') as f:
             f.write(f'{target_id_video_bil}\n')
             f.close()
-
-
-
-
-
-
-
-
-
