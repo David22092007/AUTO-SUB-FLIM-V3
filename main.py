@@ -631,12 +631,11 @@ def dub_movie(input_video_path, output_dir, api_keys, source_language, target_la
     
     if full_option:
         print("Step 3: Generating TTS files for segments...")
-        checkpoint = load_checkpoint(translated_json_path)
-        checkpoint_dub=load_checkpoint(checkpoint_dub_file)['segments']
+        checkpoint = load_checkpoint(translated_json_path);checkpoint_dub=[]        
         metadata_list = checkpoint["segments"]
-        list_start_time_complete = []
-        
+        list_start_time_complete = []        
         if os.path.exists(checkpoint_dub_file):
+            checkpoint_dub=load_checkpoint(checkpoint_dub_file)['segments']
             list_start_time_complete = [i['start_time'] for i in checkpoint_dub if i['status'] == 'completed']        
         metadata_list = [i for i in metadata_list if i['start_time'] not in list_start_time_complete]
         max_workers = min(os.cpu_count() or 2, 2)
