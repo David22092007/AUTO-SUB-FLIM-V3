@@ -680,10 +680,6 @@ def dub_movie(input_video_path, output_dir, api_keys, source_language, target_la
 
         # Lưu lại kết quả vào file checkpoint
         save_checkpoint(checkpoint_dub_file, {"segments": new_metadata})
-            except Exception as e:
-                logging.error(f"TTS generation error: {e}")
-                print(f"TTS generation error: {e}")
-
 def upload_to_youtube(file_path, title, description, category, keywords, privacy_status):
     if not os.path.exists(CLIENT_SECRETS_FILE):
         raise FileNotFoundError(f"'{CLIENT_SECRETS_FILE}' not found. Download OAuth 2.0 Client JSON from Google Cloud Console.")
